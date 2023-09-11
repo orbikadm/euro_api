@@ -4,3 +4,4 @@ venv
 /venv/
 orders.sqlite3
 .idea
+.env
