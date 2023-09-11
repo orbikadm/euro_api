@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "euro-api"
+version = "0.1.0"
+description = "Скрипт отслеживает состояние заказов и оповещает при отказах поставщика"
+authors = ["dem507 <orbikadm@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+zeep = "^4.2.1"
+requests = "^2.31.0"
+python-telegram-bot = "13.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
