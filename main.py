@@ -17,6 +17,7 @@ ROSSKO_API_KEY1 = os.getenv('ROSSKO_API_KEY1')
 ROSSKO_API_KEY2 = os.getenv('ROSSKO_API_KEY2')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+WA_TEL = os.getenv('WA_TEL')
 DATABASE = 'orders.sqlite3'
 TIME_TO_SLEEP = 10
 INSERT_QUERY = """
@@ -45,16 +46,6 @@ class Part:
     brand: str
     price: float
     count: int
-
-
-def send_message(bot, message):
-    """Функция отправляет сообщение в телеграм."""
-    try:
-        logger.debug('Сообщение отправляется в телеграмм...')
-        bot.send_message(TELEGRAM_CHAT_ID, message)
-        logger.debug(f'Сообщение успешно отправлено: \n {message}')
-    except TelegramError as error:
-        logger.error(f'Ошибка при отправке сообщения в телеграмм: {error}')
 
 
 def get_orders_list():
@@ -129,8 +120,8 @@ def save_to_bd(con, part):
     con.commit()
 
 
-def get_message(order):
-    """Подготавливаем сообщение для отправки."""
+def tg_get_message(order):
+    """Подготавливаем сообщение для отправки в Telegramm."""
     message = f"""
 \u2757\u2757\u2757 ОТМЕНА ПОЗИЦИИ \u2757\u2757\u2757\n
 \U0001F4CBЗаказ:  {order.orderid}\n
@@ -143,6 +134,21 @@ def get_message(order):
 
     """
     return message
+
+
+def wa_get_message(order):
+    """Подготавливаем сообщение для отправки в WhatsApp."""
+    pass
+
+
+def tg_send_message(bot, message):
+    """Функция отправляет сообщение в WhatsApp."""
+    try:
+        logger.debug('Сообщение отправляется в WhatsApp...')
+        #  import whatsapp
+        logger.debug(f'Сообщение успешно отправлено: \n {message}')
+    except TelegramError as error:
+        logger.error(f'Ошибка при отправке сообщения в WhatsApp: {error}')
 
 
 if __name__ == '__main__':
@@ -161,20 +167,20 @@ if __name__ == '__main__':
                 for part in part_list:
                     if not parts_in_db:
                         save_to_bd(con=con, part=part)
-                        message = get_message(part)
-                        send_message(bot, message)
+                        message = tg_get_message(part)
+                        tg_send_message(bot, message)
 
                     for item in parts_in_db:
                         if part.orderid in item and part.part_number in item:
                             print('НЕ Записываем')
                         else:
                             save_to_bd(con=con, part=part)
-                            message = get_message(part)
-                            send_message(bot, message)
+                            message = tg_get_message(part)
+                            tg_send_message(bot, message)
         except Exception as error:
             print(error)
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
-            send_message(bot, error_message)
+            tg_send_message(bot, error_message)
         logger.debug(
             'Заказы проверены, следующая проверка через {TIME_TO_SLEEP} секунд'
             )
