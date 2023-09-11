@@ -10,6 +10,8 @@ from telegram import Bot
 from telegram.error import TelegramError
 from dotenv import load_dotenv
 
+from whatsapp_sender import send_msg_wa
+
 
 load_dotenv()
 API_URL_GET_ORDERS = 'http://api.rossko.ru/service/v2.1/GetOrders'
@@ -120,10 +122,10 @@ def save_to_bd(con, part):
     con.commit()
 
 
-def tg_get_message(order):
+def get_message(order):
     """Подготавливаем сообщение для отправки в Telegramm."""
     message = f"""
-\u2757\u2757\u2757 ОТМЕНА ПОЗИЦИИ \u2757\u2757\u2757\n
+\u2757\u2757 ОТМЕНА ПОЗИЦИИ \u2757\u2757\n
 \U0001F4CBЗаказ:  {order.orderid}\n
 \u23F0Дата заказа:  {part.created_date}\n
 \U0001F4EDАдрес доставки:  {part.delivery_address}\n
@@ -136,16 +138,11 @@ def tg_get_message(order):
     return message
 
 
-def wa_get_message(order):
-    """Подготавливаем сообщение для отправки в WhatsApp."""
-    pass
-
-
 def tg_send_message(bot, message):
     """Функция отправляет сообщение в WhatsApp."""
     try:
         logger.debug('Сообщение отправляется в WhatsApp...')
-        #  import whatsapp
+        bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug(f'Сообщение успешно отправлено: \n {message}')
     except TelegramError as error:
         logger.error(f'Ошибка при отправке сообщения в WhatsApp: {error}')
@@ -162,26 +159,27 @@ if __name__ == '__main__':
 
             for order in orders_list:
                 part_list = parse_order(order)
-                print('список запчастюль', part_list)
                 parts_in_db = get_parts_from_db(cur)
                 for part in part_list:
                     if not parts_in_db:
                         save_to_bd(con=con, part=part)
-                        message = tg_get_message(part)
+                        message = get_message(part)
                         tg_send_message(bot, message)
+                        send_msg_wa(WA_TEL, message)
 
                     for item in parts_in_db:
                         if part.orderid in item and part.part_number in item:
                             print('НЕ Записываем')
                         else:
                             save_to_bd(con=con, part=part)
-                            message = tg_get_message(part)
+                            message = get_message(part)
                             tg_send_message(bot, message)
+                            send_msg_wa(WA_TEL, message)
         except Exception as error:
             print(error)
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
             tg_send_message(bot, error_message)
-        logger.debug(
-            'Заказы проверены, следующая проверка через {TIME_TO_SLEEP} секунд'
+        logger.critical(
+            f'Заказы проверены, следующая проверка через {TIME_TO_SLEEP} секунд'
             )
         time.sleep(TIME_TO_SLEEP)

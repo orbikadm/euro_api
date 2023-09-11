@@ -1,3 +1,5 @@
+import urllib.parse
+
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -7,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from time import sleep
 
 
-def create_driver(tel_number, text_message):
+def send_msg_wa(tel_number, text_message):
     options = webdriver.ChromeOptions()
     options.add_argument('--allow-profiles-outside-user-dir')
     options.add_argument('--enable-profile-shortcut-manager')
@@ -20,7 +22,9 @@ def create_driver(tel_number, text_message):
         service=Service(ChromeDriverManager().install()), options=options)
     wait = WebDriverWait(driver, 30)
 
-    url = f"https://web.whatsapp.com/send?phone={tel_number}&text={text_message}"
+    text = {'phone': tel_number, 'text': text_message}
+    url_data = urllib.parse.urlencode(text)  
+    url = f"https://web.whatsapp.com/send?{url_data}"
     driver.get(url)
     btn_path = '/html/body/div[1]/div/div/div[5]/div/footer/div[1]/div/span[2]/div/div[2]/div[2]/button'
     wait.until(EC.element_to_be_clickable((By.XPATH, btn_path)))
