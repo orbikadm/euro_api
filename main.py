@@ -11,6 +11,7 @@ from telegram.error import TelegramError
 from dotenv import load_dotenv
 
 from whatsapp_sender import send_msg_wa
+from wa_api import send_message
 
 
 load_dotenv()
@@ -20,6 +21,9 @@ ROSSKO_API_KEY2 = os.getenv('ROSSKO_API_KEY2')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 WA_TEL = os.getenv('WA_TEL')
+WA_IDINSTANS = os.getenv('WA_IDINSTANS')
+WA_API_TOKEN_INSTANCE = os.getenv('WA_API_TOKEN_INSTANCE')
+
 DATABASE = 'orders.sqlite3'
 TIME_TO_SLEEP = 600
 INSERT_QUERY = """
@@ -165,7 +169,7 @@ if __name__ == '__main__':
                         save_to_bd(con=con, part=part)
                         message = get_message(part)
                         tg_send_message(bot, message)
-                        send_msg_wa(WA_TEL, message)
+                        send_message(message, WA_TEL, )
 
                     for item in parts_in_db:
                         if part.orderid in item and part.part_number in item:
@@ -174,7 +178,7 @@ if __name__ == '__main__':
                             save_to_bd(con=con, part=part)
                             message = get_message(part)
                             tg_send_message(bot, message)
-                            send_msg_wa(WA_TEL, message)
+                            whatsapp.send_message(WA_TEL, message)
         except Exception as error:
             print(error)
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
