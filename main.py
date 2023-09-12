@@ -10,7 +10,6 @@ from telegram import Bot
 from telegram.error import TelegramError
 from dotenv import load_dotenv
 
-from whatsapp_sender import send_msg_wa
 from wa_api import send_message
 
 
@@ -35,7 +34,7 @@ INSERT_QUERY = """
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.CRITICAL
+    level=logging.DEBUG
 )
 handler = logging.StreamHandler(stream=sys.stderr)
 logger.addHandler(handler)
@@ -53,6 +52,13 @@ class Part:
     price: float
     count: int
 
+
+def check_tokens():
+    tokens: tuple = (
+        ROSSKO_API_KEY1, ROSSKO_API_KEY2, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID,
+        WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE
+    )
+    return all(tokens)
 
 def get_orders_list():
     try:
@@ -127,7 +133,7 @@ def save_to_bd(con, part):
 
 
 def get_message(order):
-    """Подготавливаем сообщение для отправки в Telegramm."""
+    """Подготавливаем сообщение для отправки."""
     message = f"""
 \u2757\u2757 ОТМЕНА ПОЗИЦИИ \u2757\u2757\n
 \U0001F4CBЗаказ:  {order.orderid}\n
@@ -153,6 +159,9 @@ def tg_send_message(bot, message):
 
 
 if __name__ == '__main__':
+    if not check_tokens():
+        logger.critical('Отсутствует один или несколько токенов')
+        sys.exit('Ошибка: токены не прошли валидацию')
     bot: Bot = Bot(token=TELEGRAM_TOKEN)
     while True:
         try:
@@ -169,7 +178,7 @@ if __name__ == '__main__':
                         save_to_bd(con=con, part=part)
                         message = get_message(part)
                         tg_send_message(bot, message)
-                        send_message(message, WA_TEL, )
+                        send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
 
                     for item in parts_in_db:
                         if part.orderid in item and part.part_number in item:
@@ -178,12 +187,12 @@ if __name__ == '__main__':
                             save_to_bd(con=con, part=part)
                             message = get_message(part)
                             tg_send_message(bot, message)
-                            whatsapp.send_message(WA_TEL, message)
+                            send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
         except Exception as error:
             print(error)
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
             tg_send_message(bot, error_message)
-        logger.critical(
+        logger.debug(
             f'Заказы проверены, следующая проверка через {TIME_TO_SLEEP} секунд'
             )
         time.sleep(TIME_TO_SLEEP)
