@@ -6,7 +6,7 @@ authors = ["dem507 <orbikadm@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.9.3"
 zeep = "^4.2.1"
 requests = "^2.31.0"
 python-telegram-bot = "13.7"

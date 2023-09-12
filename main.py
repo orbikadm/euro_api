@@ -21,7 +21,7 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 WA_TEL = os.getenv('WA_TEL')
 DATABASE = 'orders.sqlite3'
-TIME_TO_SLEEP = 10
+TIME_TO_SLEEP = 600
 INSERT_QUERY = """
     INSERT INTO orders(
     orderid, created_date, delivery_address, part_number, name, brand,

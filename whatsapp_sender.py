@@ -13,8 +13,8 @@ def send_msg_wa(tel_number, text_message):
     options = webdriver.ChromeOptions()
     options.add_argument('--allow-profiles-outside-user-dir')
     options.add_argument('--enable-profile-shortcut-manager')
-    options.add_argument(r'user-data-dir=C:\Program Files\Google\Chrome')
-    options.add_argument('--profile-directory=Profile 1')
+    options.add_argument(r'user-data-dir=C:\tools\Google\Chrome')
+    options.add_argument('--profile-directory=Profiledem')
     options.add_argument('--profiling-flush=2592000')
     options.add_argument('--enable-aggressive-domstorage-flushing')
 
