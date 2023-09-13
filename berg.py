@@ -1,9 +1,11 @@
+import os
 import requests
-import json
+from dotenv import load_dotenv
 
 
-key = '5062031b80982cd3535a8e5e8e76a1a2e01f1a4226e6ce38becd868c9a22febb'
-url = 'https://api.berg.ru/ordering/states/active?key=5062031b80982cd3535a8e5e8e76a1a2e01f1a4226e6ce38becd868c9a22febb'
+load_dotenv()
+berg_key = os.getenv('BERG_KEY')
+url = 'https://api.berg.ru/ordering/states/active?key=' + berg_key
 result = requests.get(url).json()
 
 orders_list = result.get('orders')
