@@ -32,12 +32,22 @@ INSERT_QUERY = """
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
-)
-handler = logging.StreamHandler(stream=sys.stderr)
-logger.addHandler(handler)
+
+
+def config_logger(logger):
+    """Конфигурирование логгера."""
+    logger.setLevel(logging.DEBUG)
+    f_handler = logging.FileHandler(
+        filename="euro_api.log", mode='w', encoding='utf-8'
+    )
+    formatter = logging.Formatter(
+        '%(asctime)s - %(filename)s - %(levelname)s - %(message)s'
+    )
+    f_handler.setFormatter(formatter)
+    stderr_handler = logging.StreamHandler(stream=sys.stderr)
+
+    logger.addHandler(f_handler)
+    logger.addHandler(stderr_handler)
 
 
 @dataclass
@@ -54,6 +64,7 @@ class Part:
 
 
 def check_tokens():
+    """Проверка наличия всех токенов в ENV."""
     tokens: tuple = (
         ROSSKO_API_KEY1, ROSSKO_API_KEY2, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID,
         WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE
@@ -61,6 +72,7 @@ def check_tokens():
     return all(tokens)
 
 def get_orders_list():
+    """Функция получает список заказов через API."""
     try:
         settings = Settings(strict=False, xml_huge_tree=True)
         client = Client(API_URL_GET_ORDERS, settings=settings)
@@ -149,16 +161,17 @@ def get_message(order):
 
 
 def tg_send_message(bot, message):
-    """Функция отправляет сообщение в WhatsApp."""
+    """Функция отправляет сообщение в Telegram."""
     try:
-        logger.debug('Сообщение отправляется в WhatsApp...')
+        logger.debug('Сообщение отправляется в Telegram...')
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug(f'Сообщение успешно отправлено: \n {message}')
     except TelegramError as error:
-        logger.error(f'Ошибка при отправке сообщения в WhatsApp: {error}')
+        logger.error(f'Ошибка при отправке сообщения в Telegram: {error}')
 
 
 if __name__ == '__main__':
+    config_logger(logger=logger)
     if not check_tokens():
         logger.critical('Отсутствует один или несколько токенов')
         sys.exit('Ошибка: токены не прошли валидацию')
@@ -182,14 +195,14 @@ if __name__ == '__main__':
 
                     for item in parts_in_db:
                         if part.orderid in item and part.part_number in item:
-                            print('НЕ Записываем')
+                            logger.debug('Новых отмененных товаров не найдено.')
                         else:
                             save_to_bd(con=con, part=part)
                             message = get_message(part)
                             tg_send_message(bot, message)
                             send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
         except Exception as error:
-            print(error)
+            logger.error('Произошла ошибка в работе скрипта\n{error}')
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
             tg_send_message(bot, error_message)
         logger.debug(
