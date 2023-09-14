@@ -1,0 +1,2 @@
+class RosskoApiException(Exception):
+    pass

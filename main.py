@@ -3,7 +3,7 @@ import os
 import time
 import sqlite3
 import logging
-from dataclasses import dataclass
+
 
 from zeep import Client, Settings
 from telegram import Bot
@@ -11,9 +11,12 @@ from telegram.error import TelegramError
 from dotenv import load_dotenv
 
 from wa_api import send_message
-
+from berg import get_parts_berg
+from rossko import get_parts_rossko
+from classes import Part
 
 load_dotenv()
+
 API_URL_GET_ORDERS = 'http://api.rossko.ru/service/v2.1/GetOrders'
 ROSSKO_API_KEY1 = os.getenv('ROSSKO_API_KEY1')
 ROSSKO_API_KEY2 = os.getenv('ROSSKO_API_KEY2')
@@ -27,8 +30,9 @@ DATABASE = 'orders.sqlite3'
 TIME_TO_SLEEP = 600
 INSERT_QUERY = """
     INSERT INTO orders(
-    orderid, created_date, delivery_address, part_number, name, brand,
-    price, count, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+    supplier, orderid, created_date, delivery_address,
+    part_number, name, brand, price, count, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
 
 
 logger = logging.getLogger(__name__)
@@ -50,19 +54,6 @@ def config_logger(logger):
     logger.addHandler(stderr_handler)
 
 
-@dataclass
-class Part:
-    orderid: int
-    created_date: str
-    delivery_address: str
-    status: int
-    part_number: str
-    name: str
-    brand: str
-    price: float
-    count: int
-
-
 def check_tokens():
     """Проверка наличия всех токенов в ENV."""
     tokens: tuple = (
@@ -71,24 +62,11 @@ def check_tokens():
     )
     return all(tokens)
 
-def get_orders_list():
-    """Функция получает список заказов через API."""
-    try:
-        settings = Settings(strict=False, xml_huge_tree=True)
-        client = Client(API_URL_GET_ORDERS, settings=settings)
-        return client.service.GetOrders(
-            KEY1=ROSSKO_API_KEY1,
-            KEY2=ROSSKO_API_KEY2,
-            type=4,
-            limit=60
-        ).OrdersList.Order
-    except Exception as error:
-        logger.error(f'Ошибка при получении ответа от Api Rossko: {error}')
-
 
 def create_table(cur):
     """Функция создаёт таблицу в базе данных если её нет."""
     cur.execute("""CREATE TABLE IF NOT EXISTS orders(
+        supplier TEXT,
         orderid INT,
         created_date TEXT,
         delivery_address TEXT,
@@ -101,33 +79,12 @@ def create_table(cur):
     """)
 
 
-def parse_order(order) -> list[Part]:
-    """Парсим заказ, возвращаем объект Part."""
-    parts_list = []
-    orderid = order.id
-    created_date = order.created_date
-    detail = order.detail
-    delivery_address = detail.delivery_address
-    parts = order.parts.part
-    for part in parts:
-        status = part.status
-        if status == 7:
-            part_number = part.partnumber
-            name = part.name
-            brand = part.brand
-            price = part.price
-            count = part.count
-            newpart = Part(
-                orderid=orderid, created_date=created_date, status=status,
-                delivery_address=delivery_address, part_number=part_number,
-                name=name, brand=brand, price=price, count=count)
-            parts_list.append(newpart)
-    return parts_list
-
-
-def get_parts_from_db(cur):
+def get_parts_from_db(cur, supplier):
     """Функция получает из базы даных все товары, по которым была отмена."""
-    check_query = """SELECT * FROM orders WHERE status LIKE 7"""
+    if supplier == 'ROSSKO':
+        check_query = """SELECT * FROM orders WHERE status LIKE 7"""
+    else:  # Если не росско то Берг
+        check_query = """SELECT * FROM orders WHERE status LIKE 3"""
     cur.execute(check_query)
     db_parts = cur.fetchall()
     return db_parts
@@ -136,7 +93,7 @@ def get_parts_from_db(cur):
 def save_to_bd(con, part):
     """Сохраняет заказ в БД."""
     values = (
-        part.orderid, part.created_date, part.delivery_address,
+        part.supplier, part.orderid, part.created_date, part.delivery_address,
         part.part_number, part.name, part.brand, part.price, part.count,
         part.status
         )
@@ -177,30 +134,45 @@ if __name__ == '__main__':
         sys.exit('Ошибка: токены не прошли валидацию')
     bot: Bot = Bot(token=TELEGRAM_TOKEN)
     while True:
+        first_start = 1
         try:
-            orders_list = get_orders_list()
             con = sqlite3.connect(DATABASE)
             cur = con.cursor()
             create_table(cur)
 
-            for order in orders_list:
-                part_list = parse_order(order)
-                parts_in_db = get_parts_from_db(cur)
-                for part in part_list:
-                    if not parts_in_db:
+
+            part_list = get_parts_rossko()  # Получаем новый список отмененных товаров
+            part_list_berg = get_parts_berg()
+            part_list.extend(part_list_berg)
+            print(part_list_berg)
+
+            parts_in_db = get_parts_from_db(cur, 'ROSSKO') # получаем товары, которые уже есть в бд
+            parts_in_db_berg = get_parts_from_db(cur, 'BERG')
+            parts_in_db.extend(parts_in_db_berg)
+            print(parts_in_db)
+
+            for part in part_list:
+                if not parts_in_db:
+                    save_to_bd(con=con, part=part)
+                    message = get_message(part)
+                    if not first_start:
+                        # tg_send_message(bot, message)
+                        print('Отправлено сообщение в Telegram')
+                        # send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
+                        print('Отправлено сообщение в Whatsapp')
+
+                for item in parts_in_db:
+                    if part.orderid in item and part.part_number in item:
+                        logger.debug('Новых отмененных товаров не найдено.')
+                    else:
                         save_to_bd(con=con, part=part)
                         message = get_message(part)
-                        tg_send_message(bot, message)
-                        send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
-
-                    for item in parts_in_db:
-                        if part.orderid in item and part.part_number in item:
-                            logger.debug('Новых отмененных товаров не найдено.')
-                        else:
-                            save_to_bd(con=con, part=part)
-                            message = get_message(part)
-                            tg_send_message(bot, message)
-                            send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
+                        if not first_start:
+                            # tg_send_message(bot, message)
+                            print('Отправлено сообщение в Telegram')
+                            # send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
+                            print('Отправлено сообщение в Whatsapp')
+       
         except Exception as error:
             logger.error('Произошла ошибка в работе скрипта\n{error}')
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
@@ -208,4 +180,18 @@ if __name__ == '__main__':
         logger.debug(
             f'Заказы проверены, следующая проверка через {TIME_TO_SLEEP} секунд'
             )
+        first_start = 0
         time.sleep(TIME_TO_SLEEP)
+
+
+
+#TODO Список необходимых изменений
+
+# 1. Сделать единым формат datetime
+# 2. Разделить по модулям функционал
+# 3. Убрать дублирование кода
+# 4. Поправить проверку наличия товара в БД
+# 5. Отловить исключения при работе api Berg
+
+
+

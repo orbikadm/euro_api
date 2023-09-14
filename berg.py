@@ -2,43 +2,41 @@ import os
 import requests
 from dotenv import load_dotenv
 
+from classes import Part
+
 
 load_dotenv()
-berg_key = os.getenv('BERG_KEY')
-url = 'https://api.berg.ru/ordering/states/active?key=' + berg_key
-result = requests.get(url).json()
 
-orders_list = result.get('orders')
-with open('berg_response.txt', 'w', encoding='utf-8') as file:
-    file.write(str(orders_list) + '\n')
-
-for order in orders_list:
-    orderid = order.get('id')
-    created_date = order.get('created_at')
-    delivery_address = order.get('shipment_address')
-    items = order.get('items')
-    for item in items:
-        status = item.get('state').get('id')
-        part_number = item.get('resource').get('article')
-        name = item.get('resource').get('name')
-        brand = item.get('resource').get('brand').get('name')
-        price = item.get('price')
-        count = item.get('quantity')
-
-        with open('berg_items.txt', 'a', encoding='utf-8') as file:
-            file.write('Номер заказа: ' + str(orderid) + '\n')
-            file.write('Дата заказа: ' + str(created_date) + '\n')
-            file.write('Адресс доставки: ' + str(delivery_address) + '\n')
-            file.write('Статус: ' + str(status) + '\n')
-            file.write('Артикул: ' + str(part_number) + '\n')
-            file.write('Наименование: ' + str(name) + '\n')
-            file.write('Бренд: ' + str(brand) + '\n')
-            file.write('Цена: ' + str(price) + '\n')
-            file.write('Количество: ' + str(count) + '\n')
-            file.write('\n')
+BERG_KEY = os.getenv('BERG_KEY')
 
 
+def get_parts_berg() -> list[Part]:
+    "Получаем список инстансов Part."
+    parts_list = []
+    url = 'https://api.berg.ru/ordering/states/active?key=' + BERG_KEY
+    result = requests.get(url).json()
 
+    orders_list = result.get('orders')
 
+    for order in orders_list:
+        supplier = 'Berg'
+        orderid = order.get('id')
+        created_date = order.get('created_at')
+        delivery_address = order.get('shipment_address')
+        items = order.get('items')
+        for item in items:
+            status = item.get('state').get('id')
+            part_number = item.get('resource').get('article')
+            name = item.get('resource').get('name')
+            brand = item.get('resource').get('brand').get('name')
+            price = item.get('price')
+            count = item.get('quantity')
 
-# print(data)
+            if status == 3:  #  фильтрация отмененных заказов
+                newpart = Part(
+                    orderid=orderid, created_date=created_date, status=status,
+                    delivery_address=delivery_address, part_number=part_number,
+                    name=name, brand=brand, price=price, count=count,
+                    supplier=supplier)
+                parts_list.append(newpart)
+    return parts_list
