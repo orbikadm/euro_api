@@ -1,21 +1,13 @@
-import os
-
-from dotenv import load_dotenv
 from zeep import Client, Settings
-
 from classes import Part
 from exceptions import RosskoApiException
 
-load_dotenv()
-
-API_URL_GET_ORDERS = 'http://api.rossko.ru/service/v2.1/GetOrders'
-ROSSKO_API_KEY1 = os.getenv('ROSSKO_API_KEY1')
-ROSSKO_API_KEY2 = os.getenv('ROSSKO_API_KEY2')
+from constants import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS
 
 
-def get_parts_rossko() -> list[Part]:
+def get_parts_rossko() -> list[tuple]:
     """Функция получает список заказов через API."""
-    parts_list = []
+    parts_list: list[tuple] = []
     try:
         settings = Settings(strict=False, xml_huge_tree=True)
         client = Client(API_URL_GET_ORDERS, settings=settings)
@@ -27,7 +19,7 @@ def get_parts_rossko() -> list[Part]:
         ).OrdersList.Order
     except Exception as error:
         raise RosskoApiException({error})
-    
+
     for order in order_list:
         supplier = 'Rossko'
         orderid = order.id
@@ -36,17 +28,18 @@ def get_parts_rossko() -> list[Part]:
         delivery_address = detail.delivery_address
         parts = order.parts.part
         for part in parts:
-            status = part.status
-            if status == 7: #  фильтрация отмененных заказов
-                part_number = part.partnumber
-                name = part.name
-                brand = part.brand
-                price = part.price
-                count = part.count
-                newpart = Part(
-                    orderid=orderid, created_date=created_date, status=status,
-                    delivery_address=delivery_address, part_number=part_number,
-                    name=name, brand=brand, price=price, count=count,
-                    supplier=supplier)
-                parts_list.append(newpart)
+            status: str = part.status
+            if status == 7:  #  фильтрация отмененных заказов
+                part_number: str = part.partnumber
+                name: str = part.name
+                brand: str = part.brand
+                price: float = part.price
+                count: str = part.count
+                uniq_id: tuple[str] = (orderid, part_number)
+                parts_list.append(
+                    (
+                        uniq_id, supplier, created_date, delivery_address, name,
+                        brand, price, count, status
+                    )
+                )
     return parts_list
