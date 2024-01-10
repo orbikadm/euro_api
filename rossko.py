@@ -4,9 +4,9 @@ from exceptions import RosskoApiException
 from settings import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS
 
 
-def get_parts_rossko() -> list[tuple]:
-    """Функция получает список заказов через API."""
-    parts_list: list[tuple] = []
+def get_parts_rossko() -> list[tuple[str]]:
+    """Получаем список отмененных заказов от Росско."""
+    parts_list: list[tuple[str]] = []
     try:
         settings = Settings(strict=False, xml_huge_tree=True)
         client = Client(API_URL_GET_ORDERS, settings=settings)
@@ -20,25 +20,26 @@ def get_parts_rossko() -> list[tuple]:
         raise RosskoApiException({error})
 
     for order in order_list:
-        supplier = 'Rossko'
-        orderid = order.id
-        created_date = order.created_date
+        supplier: str = 'Rossko'
+        orderid: str = str(order.id)
+        created_date: str = order.created_date
         detail = order.detail
-        delivery_address = detail.delivery_address
+        delivery_address: str = detail.delivery_address
         parts = order.parts.part
-        for part in parts:
+        for num, part in enumerate(parts):
             status: str = part.status
-            if status == 7:  #  фильтрация отмененных заказов
+            if num == 7:  #  фильтрация отмененных заказов (7 - отмененные)
+                status = 'Отменен'
                 part_number: str = part.partnumber
                 name: str = part.name
                 brand: str = part.brand
-                price: float = part.price
-                count: str = part.count
-                uniq_id: tuple[str] = (orderid, part_number)
+                price: str = part.price
+                count: str = str(part.count)
                 parts_list.append(
                     (
-                        uniq_id, supplier, created_date, delivery_address, name,
-                        brand, price, count, status
+                        orderid, part_number, supplier, created_date,
+                        delivery_address, name, brand, price, count, status
                     )
                 )
+
     return parts_list

@@ -3,6 +3,8 @@ venv
 /venv
 /venv/
 *.sqlite3
+*.db
+*.sqlite
 .idea
 .env
 __pycache__

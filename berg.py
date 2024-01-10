@@ -1,20 +1,20 @@
-import os
 import requests
-from dotenv import load_dotenv
+
+from settings import BERG_API_URL, BERG_KEY
 
 
-
-load_dotenv()
-
-BERG_KEY = os.getenv('BERG_KEY')
+statuses = {
+    '1': 'Обнулен',
+    '3': 'Снят с резерва',
+    '663': 'Задержка поставки'
+}
 
 
 def get_parts_berg() -> list:
-    "Получаем список инстансов Part."
+    "Получаем список отмененных заказов от Берга."
     parts_list = []
-    url = 'https://api.berg.ru/ordering/states/active?key=' + BERG_KEY
+    url = BERG_API_URL + BERG_KEY
     result = requests.get(url).json()
-
     orders_list = result.get('orders')
 
     for order in orders_list:
@@ -31,11 +31,18 @@ def get_parts_berg() -> list:
             price = item.get('price')
             count = item.get('quantity')
 
-            if status == 3:  #  фильтрация отмененных заказов
-                newpart = Part(
-                    orderid=orderid, created_date=created_date, status=status,
-                    delivery_address=delivery_address, part_number=part_number,
-                    name=name, brand=brand, price=price, count=count,
-                    supplier=supplier)
-                parts_list.append(newpart)
+            if status in (1, 3, 663):  #  фильтрация отмененных заказов
+                status = statuses[status]
+                parts_list.append(
+                    (
+                        orderid, part_number, supplier, created_date,
+                        delivery_address, name, brand, price, count, status
+                    )
+                )
+    # print('ORDER_LIST', orders_list)
+    # print('PART_LIST', parts_list)
+
     return parts_list
+
+
+# get_parts_berg()
