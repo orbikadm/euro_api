@@ -1,6 +1,6 @@
 import sys
 import time
-import sqlite3
+import datetime
 import logging
 import traceback
 
@@ -9,57 +9,36 @@ from telegram import Bot
 from wa_api import send_message
 from berg import get_parts_berg
 from rossko import get_parts_rossko
-from classes import Part
 from mock_data import rossko_mock_response, berg_mock_response
 
-from constants import DATABASE, TELEGRAM_TOKEN, TIME_TO_SLEEP
+from settings import DATABASE, TELEGRAM_TOKEN, TIME_TO_SLEEP, DATETIME_FORMAT
 
 
 from configs import configure_logging
 from utils import check_tokens, get_message, tg_send_message
 
-
-INSERT_QUERY = """
-    INSERT INTO orders(
-    uniq_id, supplier, created_date, delivery_address,
-    name, brand, price, count, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.orm import declarative_base, Session
 
 
-def create_table(cur):
-    """Функция создаёт таблицу в базе данных если её нет."""
-
-    cur.execute("""CREATE TABLE IF NOT EXISTS orders(
-        uniq_id TEXT,
-        supplier TEXT,
-        created_date TEXT,
-        delivery_address TEXT,
-        name TEXT,
-        brand TEXT,
-        price REAL,
-        count INT,
-        status INT);
-    """)
+Base = declarative_base()
 
 
-def get_parts_from_db(cur):
-    """Функция получает из базы даных все товары, по которым была отмена."""
+class Order(Base):
+    __tablename__ = 'order'
+    uniq_id = Column(String, primary_key=True)
+    supplier = Column(String)
+    created_date = Column(DateTime)
+    delivery_address = Column(Text)
+    name = Column(String)
+    brand = Column(String)
+    price = Column(String)
+    count = Column(Integer)
+    status = Column(Integer)
 
-    check_query = """SELECT * FROM orders"""
-    cur.execute(check_query)
-    db_parts = cur.fetchall()
-    return db_parts
 
-
-def save_to_bd(con, part):
-    """Сохраняет заказ в БД."""
-
-    uniq_id = str(part[0])
-    values = (
-        uniq_id, *part[1:]
-    )
-    cur.execute(INSERT_QUERY, values)
-    con.commit()
+def check_order_in_db(order):
+    return session.query(order).count()
 
 
 if __name__ == '__main__':
@@ -67,33 +46,49 @@ if __name__ == '__main__':
     if not check_tokens():
         logging.critical('Отсутствует один или несколько токенов')
         sys.exit('Ошибка: токены не прошли валидацию')
+
+    engine = create_engine(f'sqlite:///{DATABASE}')
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+
     bot: Bot = Bot(token=TELEGRAM_TOKEN)
     while True:
         first_start = 1
         try:
-            con = sqlite3.connect(DATABASE)
-            cur = con.cursor()
-            create_table(cur)
-
             part_list = rossko_mock_response #get_parts_rossko()
             part_list_berg = berg_mock_response # get_parts_berg()
             part_list.extend(part_list_berg)
 
-            parts_in_db = get_parts_from_db(cur)
-            ids_parts_in_db = [part[0] for part in parts_in_db]
-
             for num, part in enumerate(part_list):
                 # Удалить проверку отправки по необходимости
-                if num % 3 == 0:
-                    message = get_message(part)
-                    tg_send_message(bot, message)
+                # if num % 4 == 0:
+                #     message = get_message(part)
+                #     # tg_send_message(bot, message)
                 uniq_id = str(part[0])
-                if uniq_id not in ids_parts_in_db:
-                    save_to_bd(con=con, part=part)
+
+                count = session.query(Order).get(uniq_id)
+                if not count:
+                    order = Order(
+                            uniq_id=uniq_id,
+                            supplier=part[1],
+                            created_date=datetime.datetime.strptime(part[2], DATETIME_FORMAT),
+                            delivery_address=part[3],
+                            name=part[4],
+                            brand=part[5],
+                            price=part[6],
+                            count=part[7],
+                            status=part[8],
+                    )
+                    session.add(order)
+                    session.commit()
+
+                    # Сюда перенести отправку сообщений
+
                     if not first_start:
                         message = get_message(part)
-                        tg_send_message(bot, message)
+                        # tg_send_message(bot, message)
                         print('Отправлено сообщение в Telegram')
+                        print(message)
                         # send_message(message, WA_TEL, WA_IDINSTANS, WA_API_TOKEN_INSTANCE)
                         print('Отправлено сообщение в Whatsapp')
 

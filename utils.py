@@ -1,7 +1,7 @@
 import logging
 from telegram.error import TelegramError
 
-from constants import (
+from settings import (
     ROSSKO_API_KEY1, ROSSKO_API_KEY2, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, WA_TEL,
     WA_IDINSTANS, WA_API_TOKEN_INSTANCE
 )

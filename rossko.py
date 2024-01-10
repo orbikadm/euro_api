@@ -1,8 +1,7 @@
 from zeep import Client, Settings
-from classes import Part
 from exceptions import RosskoApiException
 
-from constants import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS
+from settings import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS
 
 
 def get_parts_rossko() -> list[tuple]:

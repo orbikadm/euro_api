@@ -2,7 +2,6 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from classes import Part
 
 
 load_dotenv()
@@ -10,7 +9,7 @@ load_dotenv()
 BERG_KEY = os.getenv('BERG_KEY')
 
 
-def get_parts_berg() -> list[Part]:
+def get_parts_berg() -> list:
     "Получаем список инстансов Part."
     parts_list = []
     url = 'https://api.berg.ru/ordering/states/active?key=' + BERG_KEY
