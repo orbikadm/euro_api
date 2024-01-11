@@ -20,6 +20,6 @@ def configure_logging():
     logging.basicConfig(
         datefmt=DATETIME_FORMAT,
         format=LOG_FORMAT,
-        level=logging.DEBUG,
+        level=logging.INFO,
         handlers=(rotating_handler, logging.StreamHandler())
     )

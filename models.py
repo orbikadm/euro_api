@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, Session
 
 from settings import DATABASE
@@ -9,7 +9,7 @@ Base = declarative_base()
 
 class Order(Base):
     __tablename__ = 'order'
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
     order_id = Column(String)
     article = Column(String)
     supplier = Column(String)

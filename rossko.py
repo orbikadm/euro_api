@@ -1,7 +1,14 @@
+from datetime import datetime
+
 from zeep import Client, Settings
 from exceptions import RosskoApiException
 
-from settings import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS
+from settings import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS, DATETIME_FORMAT
+
+
+statuses = {
+    7: 'Отменен',
+}
 
 
 def get_parts_rossko() -> list[tuple[str]]:
@@ -13,7 +20,7 @@ def get_parts_rossko() -> list[tuple[str]]:
         order_list = client.service.GetOrders(
             KEY1=ROSSKO_API_KEY1,
             KEY2=ROSSKO_API_KEY2,
-            type=4,
+            # type=4,
             limit=100
         ).OrdersList.Order
     except Exception as error:
@@ -23,23 +30,24 @@ def get_parts_rossko() -> list[tuple[str]]:
         supplier: str = 'Rossko'
         orderid: str = str(order.id)
         created_date: str = order.created_date
+        created_date = datetime.strptime(created_date, DATETIME_FORMAT)
         detail = order.detail
         delivery_address: str = detail.delivery_address
         parts = order.parts.part
-        for num, part in enumerate(parts):
-            status: str = part.status
-            if num == 7:  #  фильтрация отмененных заказов (7 - отмененные)
-                status = 'Отменен'
-                part_number: str = part.partnumber
+        for part in parts:
+            status = part.status
+            if status in tuple(statuses.keys()):
+                status = statuses.get(status)
+                article: str = part.partnumber
                 name: str = part.name
                 brand: str = part.brand
                 price: str = part.price
                 count: str = str(part.count)
                 parts_list.append(
                     (
-                        orderid, part_number, supplier, created_date,
+                        orderid, article, supplier, created_date,
                         delivery_address, name, brand, price, count, status
                     )
                 )
-
+    
     return parts_list

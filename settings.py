@@ -36,3 +36,4 @@ ROSSKO_API_KEY2 = os.getenv('ROSSKO_API_KEY2')
 # Настройки API Berg
 BERG_API_URL = 'https://api.berg.ru/ordering/states/active?key='
 BERG_KEY = os.getenv('BERG_KEY')
+BERG_TIME = '%Y-%m-%dT%H:%M:%S+03:00'

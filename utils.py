@@ -6,10 +6,13 @@ import requests
 from telegram.error import TelegramError
 
 from exceptions import WhatsAppException
+from models import Order
 from settings import (
     ROSSKO_API_KEY1, ROSSKO_API_KEY2, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, WA_TEL,
     WA_IDINSTANS, WA_API_TOKEN_INSTANCE
 )
+from berg import get_parts_berg
+from rossko import get_parts_rossko
 
 
 def check_tokens():
@@ -70,3 +73,27 @@ def send_to_users(message, bot=None, whatsapp=False):
         tg_send_message(bot, message)
     if whatsapp:
         wa_send_message(message)
+
+
+def create_order(part):
+    return Order(
+        order_id=part[0],
+        article=part[1],
+        supplier=part[2],
+        created_date=part[3],
+        delivery_address=part[4],
+        name=part[5],
+        brand=part[6],
+        price=part[7],
+        count=part[8],
+        status=part[9],
+    )
+
+
+def get_orders(rossko=False, berg=False):
+    part_list = []
+    if rossko:
+        part_list.extend(get_parts_rossko())
+    if berg:
+        part_list.extend(get_parts_berg())
+    return part_list
