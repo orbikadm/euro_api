@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 
 from zeep import Client, Settings
 from exceptions import RosskoApiException
@@ -10,6 +11,9 @@ statuses = {
     7: 'Отменен',
 }
 
+delivery_adresses = {
+
+}
 
 def get_parts_rossko() -> list[tuple[str]]:
     """Получаем список отмененных заказов от Росско."""
@@ -33,6 +37,8 @@ def get_parts_rossko() -> list[tuple[str]]:
         created_date = datetime.strptime(created_date, DATETIME_FORMAT)
         detail = order.detail
         delivery_address: str = detail.delivery_address
+        if delivery_address is None:
+            delivery_address = 'Самовывоз'
         parts = order.parts.part
         for part in parts:
             status = part.status
@@ -43,9 +49,10 @@ def get_parts_rossko() -> list[tuple[str]]:
                 brand: str = part.brand
                 price: str = part.price
                 count: str = str(part.count)
+                cancel_time = datetime.now()
                 parts_list.append(
                     (
-                        orderid, article, supplier, created_date,
+                        orderid, article, supplier, cancel_time, created_date,
                         delivery_address, name, brand, price, count, status
                     )
                 )

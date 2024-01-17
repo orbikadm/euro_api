@@ -13,6 +13,7 @@ class Order(Base):
     order_id = Column(String)
     article = Column(String)
     supplier = Column(String)
+    cancel_time = Column(DateTime)
     created_date = Column(DateTime)
     delivery_address = Column(String)
     name = Column(String)

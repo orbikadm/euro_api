@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import requests
 
 from settings import BERG_API_URL, BERG_KEY, BERG_TIME
@@ -22,7 +22,7 @@ def get_parts_berg() -> list:
         supplier = 'Berg'
         orderid = str(order.get('id'))
         created_date = order.get('created_at')
-        created_date = datetime.datetime.strptime(created_date, BERG_TIME)
+        created_date = datetime.strptime(created_date, BERG_TIME)
         delivery_address = order.get('shipment_address')
         items = order.get('items')
         for item in items:
@@ -35,10 +35,12 @@ def get_parts_berg() -> list:
 
             if status in tuple(statuses.keys()):  #  фильтрация отмененных заказов
                 status = statuses.get(status)
+                cancel_time = datetime.now()
                 parts_list.append(
                     (
-                        orderid, article, supplier, created_date,
-                        delivery_address, name, brand, price, count, str(status)
+                        orderid, article, supplier, cancel_time, 
+                        created_date, delivery_address, name, brand, price,
+                         count, str(status)
                     )
                 )
 

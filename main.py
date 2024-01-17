@@ -15,7 +15,6 @@ if __name__ == '__main__':
     check_tokens()
 
     while True:
-        first_start = 1
         try:
             part_list = get_orders(
                 rossko=True,
@@ -34,9 +33,8 @@ if __name__ == '__main__':
                     session.add(order)
                     session.commit()
 
-                    if not first_start:
-                        message = get_message(order)
-                        send_to_users(message, bot=tg_bot, whatsapp=False)
+                    message = get_message(order)
+                    send_to_users(message, bot=tg_bot, whatsapp=False)
 
         except Exception as error:
             logging.error(f'Произошла ошибка в работе скрипта\n{error}')
@@ -44,5 +42,4 @@ if __name__ == '__main__':
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
             send_to_users(message, bot=tg_bot)
         logging.info(PAUSE_MESSAGE)
-        first_start = 0
         time.sleep(WAIT_TIME)

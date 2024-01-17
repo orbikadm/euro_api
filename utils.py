@@ -31,12 +31,13 @@ def get_message(order):
     message = f"""
 \u2757\u2757 ОТМЕНА ПОЗИЦИИ \u2757\u2757\n
 \U0001F4CBЗаказ:  {order.order_id}\n
+\U00002708Поставщик:  {order.supplier}\n
 \u23F0Дата заказа:  {order.created_date}\n
 \U0001F4EDАдрес доставки:  {order.delivery_address}\n
 \u274C {order.status}:
     Артикул:  {order.article}
     Бренд:  {order.brand} \n
-    \U0001F449Наименование:  {order.name} - {order.count} шт.
+\U0001F449Наименование:  {order.name} - {order.count} шт.
 
     """
     return message
@@ -46,7 +47,7 @@ def tg_send_message(bot, message):
     """Функция отправляет сообщение в Telegram."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.debug(f'Сообщение успешно отправлено: \n {message}')
+        logging.info(f'Сообщение успешно отправлено: \n {message}')
     except TelegramError as error:
         logging.error(f'Ошибка при отправке сообщения в Telegram: {error}')
 
@@ -80,13 +81,14 @@ def create_order(part):
         order_id=part[0],
         article=part[1],
         supplier=part[2],
-        created_date=part[3],
-        delivery_address=part[4],
-        name=part[5],
-        brand=part[6],
-        price=part[7],
-        count=part[8],
-        status=part[9],
+        cancel_time=part[3],
+        created_date=part[4],
+        delivery_address=part[5],
+        name=part[6],
+        brand=part[7],
+        price=part[8],
+        count=part[9],
+        status=part[10],
     )
 
 
