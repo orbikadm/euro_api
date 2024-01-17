@@ -2,18 +2,17 @@ import time
 import logging
 import traceback
 
-from configs import tg_bot, configure_logging
+from configs import tg_bot, configure_argparser, configure_logging
 from models import Order, session
 from settings import WAIT_TIME, PAUSE_MESSAGE
-from utils import check_tokens, create_order, get_message, send_to_users, get_orders
+from utils import (
+    check_tokens, create_order, get_message, send_to_users, get_orders
+)
 
 from sqlalchemy import and_
 
 
-if __name__ == '__main__':
-    configure_logging()
-    check_tokens()
-
+def main(first):
     while True:
         try:
             part_list = get_orders(
@@ -33,13 +32,22 @@ if __name__ == '__main__':
                     session.add(order)
                     session.commit()
 
-                    message = get_message(order)
-                    send_to_users(message, bot=tg_bot, whatsapp=False)
+                    if not first:
+                        message = get_message(order)
+                        send_to_users(message, bot=tg_bot, whatsapp=False)
 
         except Exception as error:
             logging.error(f'Произошла ошибка в работе скрипта\n{error}')
             traceback.print_exc()
             error_message = f'Произошла ошибка в работе скрипта\n{error}'
-            send_to_users(message, bot=tg_bot)
+            send_to_users(error_message, bot=tg_bot)
         logging.info(PAUSE_MESSAGE)
+        first = False
         time.sleep(WAIT_TIME)
+
+
+if __name__ == '__main__':
+    configure_logging()
+    check_tokens()
+    args = configure_argparser()
+    main(first=args.init)

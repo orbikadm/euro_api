@@ -33,14 +33,14 @@ def get_parts_berg() -> list:
             price = str(item.get('price'))
             count = str(item.get('quantity'))
 
-            if status in tuple(statuses.keys()):  #  фильтрация отмененных заказов
+            if status in tuple(statuses.keys()):
                 status = statuses.get(status)
                 cancel_time = datetime.now()
                 parts_list.append(
                     (
-                        orderid, article, supplier, cancel_time, 
+                        orderid, article, supplier, cancel_time,
                         created_date, delivery_address, name, brand, price,
-                         count, str(status)
+                        count, str(status)
                     )
                 )
 

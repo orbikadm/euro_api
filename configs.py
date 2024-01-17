@@ -1,5 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
+
+import argparse
 from telegram import Bot
 
 from settings import BASE_DIR, LOG_FORMAT, DATETIME_FORMAT, TELEGRAM_TOKEN
@@ -23,3 +25,14 @@ def configure_logging():
         level=logging.INFO,
         handlers=(rotating_handler, logging.StreamHandler())
     )
+
+
+def configure_argparser():
+    parser = argparse.ArgumentParser(description='Order cancel notificator')
+    parser.add_argument(
+        '-i',
+        '--init',
+        help='First check not send message',
+        action='store_true',
+    )
+    return parser.parse_args()

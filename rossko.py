@@ -1,10 +1,11 @@
 from datetime import datetime
-import time
 
 from zeep import Client, Settings
 from exceptions import RosskoApiException
 
-from settings import ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS, DATETIME_FORMAT
+from settings import (
+    ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS, DATETIME_FORMAT
+)
 
 
 statuses = {
@@ -12,8 +13,13 @@ statuses = {
 }
 
 delivery_adresses = {
-
+    'Биробиджан, улица Миллера, 26': 'Миллера',
+    'Биробиджан г, Еврейская Аобл, Широкая ул, 15': 'Широкая',
+    '680009, край.Хабаровский, г.Хабаровск, проспект 60-летия Октября, дом № 170, корпус А': 'Хабаровск',
+    'Хабаровск, Проспект 60 лет Октября, 170 а': 'Хабаровск',
+    'Хабаровск, Проспект 60 лет Октября, 170 а': 'ДСМ',
 }
+
 
 def get_parts_rossko() -> list[tuple[str]]:
     """Получаем список отмененных заказов от Росско."""
@@ -24,7 +30,6 @@ def get_parts_rossko() -> list[tuple[str]]:
         order_list = client.service.GetOrders(
             KEY1=ROSSKO_API_KEY1,
             KEY2=ROSSKO_API_KEY2,
-            # type=4,
             limit=100
         ).OrdersList.Order
     except Exception as error:
@@ -56,5 +61,5 @@ def get_parts_rossko() -> list[tuple[str]]:
                         delivery_address, name, brand, price, count, status
                     )
                 )
-    
+
     return parts_list
