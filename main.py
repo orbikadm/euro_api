@@ -6,7 +6,7 @@ from configs import tg_bot, configure_argparser, configure_logging
 from models import Order, session
 from settings import WAIT_TIME, PAUSE_MESSAGE
 from utils import (
-    check_tokens, create_order, get_message, send_to_users, get_orders
+    check_tokens, get_message, send_to_users, get_orders
 )
 
 from sqlalchemy import and_
@@ -15,20 +15,20 @@ from sqlalchemy import and_
 def main(first):
     while True:
         try:
-            part_list = get_orders(
+            order_list: list[Order] = get_orders(
                 rossko=True,
                 berg=True
             )
 
-            for part in part_list:
-                order_id, article = part[0], part[1]
+            for order in order_list:
+                # order_id, article = part[0], part[1]
                 exists = session.query(Order).filter(and_(
-                    Order.order_id == order_id,
-                    Order.article == article
+                    Order.order_id == order.order_id,
+                    Order.article == order.article
                 )).all()
 
                 if not exists:
-                    order = create_order(part)
+                    # order = create_order(part)
                     session.add(order)
                     session.commit()
 

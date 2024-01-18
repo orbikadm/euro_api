@@ -3,6 +3,7 @@ from datetime import datetime
 from zeep import Client, Settings
 from exceptions import RosskoApiException
 
+from models import Order
 from settings import (
     ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS, DATETIME_FORMAT
 )
@@ -48,17 +49,19 @@ def get_parts_rossko() -> list[tuple[str]]:
         for part in parts:
             status = part.status
             if status in tuple(statuses.keys()):
-                status = statuses.get(status)
-                article: str = part.partnumber
-                name: str = part.name
-                brand: str = part.brand
-                price: str = part.price
-                count: str = str(part.count)
-                cancel_time = datetime.now()
                 parts_list.append(
-                    (
-                        orderid, article, supplier, cancel_time, created_date,
-                        delivery_address, name, brand, price, count, status
+                    Order(
+                        order_id=orderid,
+                        article=part.partnumber,
+                        supplier=supplier,
+                        cancel_time=datetime.now(),
+                        created_date=created_date,
+                        delivery_address=delivery_address,
+                        name=part.name,
+                        brand=part.brand,
+                        price=part.price,
+                        count=str(part.count),
+                        status=statuses.get(status),
                     )
                 )
 

@@ -76,20 +76,20 @@ def send_to_users(message, bot=None, whatsapp=False):
         wa_send_message(message)
 
 
-def create_order(part):
-    return Order(
-        order_id=part[0],
-        article=part[1],
-        supplier=part[2],
-        cancel_time=part[3],
-        created_date=part[4],
-        delivery_address=part[5],
-        name=part[6],
-        brand=part[7],
-        price=part[8],
-        count=part[9],
-        status=part[10],
-    )
+# def create_order(part):
+#     return Order(
+#         order_id=part[0],
+#         article=part[1],
+#         supplier=part[2],
+#         cancel_time=part[3],
+#         created_date=part[4],
+#         delivery_address=part[5],
+#         name=part[6],
+#         brand=part[7],
+#         price=part[8],
+#         count=part[9],
+#         status=part[10],
+#     )
 
 
 def get_orders(rossko=False, berg=False):

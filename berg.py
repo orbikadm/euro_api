@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
 
+from models import Order
 from settings import BERG_API_URL, BERG_KEY, BERG_TIME
 
 
@@ -11,12 +12,12 @@ statuses = {
 }
 
 
-def get_parts_berg() -> list:
+def get_parts_berg() -> list[Order]:
     "Получаем список отмененных заказов от Берга."
-    parts_list = []
+    result: list[Order] = []
     url = BERG_API_URL + BERG_KEY
-    result = requests.get(url).json()
-    orders_list = result.get('orders')
+    response = requests.get(url).json()
+    orders_list = response.get('orders')
 
     for order in orders_list:
         supplier = 'Berg'
@@ -26,22 +27,24 @@ def get_parts_berg() -> list:
         delivery_address = order.get('shipment_address')
         items = order.get('items')
         for item in items:
-            status = item.get('state').get('id')
-            article = item.get('resource').get('article')
-            name = item.get('resource').get('name')
-            brand = item.get('resource').get('brand').get('name')
-            price = str(item.get('price'))
-            count = str(item.get('quantity'))
+            part_status = item.get('state').get('id')
 
-            if status in tuple(statuses.keys()):
-                status = statuses.get(status)
-                cancel_time = datetime.now()
-                parts_list.append(
-                    (
-                        orderid, article, supplier, cancel_time,
-                        created_date, delivery_address, name, brand, price,
-                        count, str(status)
+            if part_status in tuple(statuses.keys()):
+                status = statuses.get(part_status)
+                result.append(
+                    Order(
+                        order_id=orderid,
+                        article=item.get('resource').get('article'),
+                        supplier=supplier,
+                        cancel_time=datetime.now(),
+                        created_date=created_date,
+                        delivery_address=delivery_address,
+                        name=item.get('resource').get('name'),
+                        brand=item.get('resource').get('brand').get('name'),
+                        price=str(item.get('price')),
+                        count=str(item.get('quantity')),
+                        status=status,
                     )
                 )
 
-    return parts_list
+    return result
