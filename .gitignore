@@ -8,6 +8,4 @@ venv
 .idea
 .env
 __pycache__
-berg_response.txt
-berg_items.txt
 *.log
