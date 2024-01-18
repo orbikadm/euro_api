@@ -1,3 +1,7 @@
+class BegrApiException(Exception):
+    pass
+
+
 class RosskoApiException(Exception):
     pass
 

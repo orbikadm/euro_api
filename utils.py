@@ -6,16 +6,14 @@ import requests
 from telegram.error import TelegramError
 
 from exceptions import WhatsAppException
-from models import Order
 from settings import (
     ROSSKO_API_KEY1, ROSSKO_API_KEY2, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, WA_TEL,
-    WA_IDINSTANS, WA_API_TOKEN_INSTANCE
+    WA_IDINSTANS, WA_API_TOKEN_INSTANCE, SHOPS
 )
-from berg import get_parts_berg
-from rossko import get_parts_rossko
 
 
-def check_tokens():
+
+def check_tokens() -> None:
     """Проверка наличия всех токенов в ENV."""
     tokens: tuple = (
         ROSSKO_API_KEY1, ROSSKO_API_KEY2, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID,
@@ -26,7 +24,7 @@ def check_tokens():
         sys.exit('Ошибка: токены не прошли валидацию')
 
 
-def get_message(order):
+def get_message(order) -> str:
     """Подготавливаем сообщение для отправки."""
     message = f"""
 \u2757\u2757 ОТМЕНА ПОЗИЦИИ \u2757\u2757\n
@@ -43,7 +41,7 @@ def get_message(order):
     return message
 
 
-def tg_send_message(bot, message):
+def tg_send_message(bot, message) -> None:
     """Функция отправляет сообщение в Telegram."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
@@ -52,7 +50,7 @@ def tg_send_message(bot, message):
         logging.error(f'Ошибка при отправке сообщения в Telegram: {error}')
 
 
-def wa_send_message(message):
+def wa_send_message(message) -> None:
     url = f'https://api.green-api.com/waInstance{WA_IDINSTANS}/sendMessage/{WA_API_TOKEN_INSTANCE}'
     chat_id = WA_TEL + '@c.us'
 
@@ -69,33 +67,16 @@ def wa_send_message(message):
     logging.debug(f'Сообщение успешно отправлено в WhatsApp: \n {message}')
 
 
-def send_to_users(message, bot=None, whatsapp=False):
+def send_to_users(message, bot=None, whatsapp=False) -> None:
     if bot:
         tg_send_message(bot, message)
     if whatsapp:
         wa_send_message(message)
 
 
-# def create_order(part):
-#     return Order(
-#         order_id=part[0],
-#         article=part[1],
-#         supplier=part[2],
-#         cancel_time=part[3],
-#         created_date=part[4],
-#         delivery_address=part[5],
-#         name=part[6],
-#         brand=part[7],
-#         price=part[8],
-#         count=part[9],
-#         status=part[10],
-#     )
-
-
-def get_orders(rossko=False, berg=False):
-    part_list = []
-    if rossko:
-        part_list.extend(get_parts_rossko())
-    if berg:
-        part_list.extend(get_parts_berg())
-    return part_list
+def get_shop_address(delivery_address: str) -> str:
+    if delivery_address is None:
+        return 'Самовывоз'
+    for shop in SHOPS:
+        if shop in delivery_address:
+            return shop

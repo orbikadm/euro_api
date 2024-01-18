@@ -5,20 +5,14 @@ from exceptions import RosskoApiException
 
 from models import Order
 from settings import (
-    ROSSKO_API_KEY1, ROSSKO_API_KEY2, API_URL_GET_ORDERS, DATETIME_FORMAT
+    ROSSKO_API_KEY1, ROSSKO_API_KEY2,
+    API_URL_GET_ORDERS, DATETIME_FORMAT
 )
+from utils import get_shop_address
 
 
 statuses = {
     7: 'Отменен',
-}
-
-delivery_adresses = {
-    'Биробиджан, улица Миллера, 26': 'Миллера',
-    'Биробиджан г, Еврейская Аобл, Широкая ул, 15': 'Широкая',
-    '680009, край.Хабаровский, г.Хабаровск, проспект 60-летия Октября, дом № 170, корпус А': 'Хабаровск',
-    'Хабаровск, Проспект 60 лет Октября, 170 а': 'Хабаровск',
-    'Хабаровск, Проспект 60 лет Октября, 170 а': 'ДСМ',
 }
 
 
@@ -43,8 +37,8 @@ def get_parts_rossko() -> list[tuple[str]]:
         created_date = datetime.strptime(created_date, DATETIME_FORMAT)
         detail = order.detail
         delivery_address: str = detail.delivery_address
-        if delivery_address is None:
-            delivery_address = 'Самовывоз'
+        shop_address = get_shop_address(delivery_address)
+
         parts = order.parts.part
         for part in parts:
             status = part.status
@@ -56,7 +50,7 @@ def get_parts_rossko() -> list[tuple[str]]:
                         supplier=supplier,
                         cancel_time=datetime.now(),
                         created_date=created_date,
-                        delivery_address=delivery_address,
+                        delivery_address=shop_address,
                         name=part.name,
                         brand=part.brand,
                         price=part.price,

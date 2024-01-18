@@ -2,12 +2,11 @@ import time
 import logging
 import traceback
 
+from services import get_orders
 from configs import tg_bot, configure_argparser, configure_logging
 from models import Order, session
 from settings import WAIT_TIME, PAUSE_MESSAGE
-from utils import (
-    check_tokens, get_message, send_to_users, get_orders
-)
+from utils import check_tokens, get_message, send_to_users
 
 from sqlalchemy import and_
 
@@ -21,14 +20,12 @@ def main(first):
             )
 
             for order in order_list:
-                # order_id, article = part[0], part[1]
                 exists = session.query(Order).filter(and_(
                     Order.order_id == order.order_id,
                     Order.article == order.article
                 )).all()
 
                 if not exists:
-                    # order = create_order(part)
                     session.add(order)
                     session.commit()
 
